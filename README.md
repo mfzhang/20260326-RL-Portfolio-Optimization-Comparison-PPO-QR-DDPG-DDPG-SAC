@@ -7,7 +7,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-Production-green.svg)](production/api.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A comparative study of four Deep Reinforcement Learning algorithms — PPO, QR-DDPG, DDPG, and SAC — applied to continuous portfolio optimization across a 25-asset universe. Integrates transaction cost analysis, market regime classification, and real-world trading constraints in a production-ready deployment framework.
+A comparative study of four Deep Reinforcement Learning algorithms PPO, QR-DDPG, DDPG, and SAC applied to continuous portfolio optimization across a 25-asset universe. Integrates transaction cost analysis, market regime classification, and real-world trading constraints in a production-ready deployment framework.
 
 ---
 
@@ -224,19 +224,6 @@ PPO and QR-DDPG outperform all traditional benchmarks on risk-adjusted returns, 
 | **DDPG**    | 1.9         | 1.2         | 1.5             | Baseline reference            |
 
 ---
-
-## Production Deployment
-
-```mermaid
-graph TD
-    A[Client Request] --> B("FastAPI: 8000")
-    B --> C("PostgreSQL: 5432")
-    B --> D("Redis: 6379")
-    B --> E(Celery Worker)
-    E --> F(Training / Rebalancing GPU Container)
-    C --> G("Grafana: 3000")
-    F --> C
-```
 
 ### Portfolio Recommendation Endpoint
 
