@@ -26,11 +26,11 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 warnings.filterwarnings("ignore")
 
 # Resolve project root independent of CWD
-_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_ROOT = Path(__file__).resolve().parent.parent  # → code/
+sys.path.insert(0, str(_ROOT))  # add code/ so subpackages resolve
 
 from agents import QRDDPGAgent
-from data_processor import DataProcessor
+from data import DataProcessor
 from environment import PortfolioEnv
 
 
@@ -266,6 +266,10 @@ class TrainDRLAgents:
         PortfolioEnv, preventing the shape mismatch that occurred when the
         original code passed DummyVecEnv output to QRDDPGAgent.select_action.
         """
+        if self.test_data is None:
+            raise RuntimeError(
+                "test_data is not available — call prepare_data() before evaluate_agent()"
+            )
         # Always use the raw (unwrapped) env for evaluation
         env = self._make_raw_env(self.test_data)
         obs, _ = env.reset()

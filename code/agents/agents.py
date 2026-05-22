@@ -388,7 +388,9 @@ class QRDDPGAgent(DDPGAgent):
         pairwise_delta = targets.unsqueeze(1) - quantiles.unsqueeze(2)
         abs_delta = pairwise_delta.abs()
         huber = torch.where(abs_delta > 1.0, abs_delta - 0.5, 0.5 * pairwise_delta**2)
-        quantile_loss = (tau.unsqueeze(2) - (pairwise_delta < 0).float()).abs() * huber
+        quantile_loss = (
+            tau.view(1, -1, 1) - (pairwise_delta < 0).float()
+        ).abs() * huber
         return quantile_loss.mean()
 
 

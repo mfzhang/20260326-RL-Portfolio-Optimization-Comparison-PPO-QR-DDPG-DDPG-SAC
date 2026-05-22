@@ -14,6 +14,14 @@ Strategies implemented:
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+_CODE_DIR = _Path(__file__).resolve().parent.parent  # → code/
+if str(_CODE_DIR) not in _sys.path:
+    _sys.path.insert(0, str(_CODE_DIR))
+del _sys, _Path, _CODE_DIR
+
 import warnings
 from typing import Dict, List, Optional
 

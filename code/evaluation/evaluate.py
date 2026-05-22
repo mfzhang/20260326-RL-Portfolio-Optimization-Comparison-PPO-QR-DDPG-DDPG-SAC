@@ -15,6 +15,7 @@ import sys
 import warnings
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 import yaml
@@ -24,13 +25,15 @@ from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 warnings.filterwarnings("ignore")
 
-_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_ROOT = Path(__file__).resolve().parent.parent  # → code/
+sys.path.insert(0, str(_ROOT))  # add code/ so subpackages resolve
 
 from agents import QRDDPGAgent
-from benchmark_strategies import BacktestBenchmark
-from data_processor import DataProcessor
+from data import DataProcessor
 from environment import PortfolioEnv
+from evaluation.benchmark_strategies import (
+    BacktestBenchmark,
+)  # direct import avoids circular
 
 
 class EvaluateStrategies:
@@ -124,7 +127,6 @@ class EvaluateStrategies:
 
     def _evaluate_sb3(self, model, agent_name: str, seed: int):
         """Run one evaluation episode with an SB3 model."""
-        import numpy as np
 
         env = self._make_env()
         obs, _ = env.reset()
@@ -150,7 +152,7 @@ class EvaluateStrategies:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         agent = QRDDPGAgent(state_dim=state_dim, action_dim=action_dim, device=device)
 
-        checkpoint = torch.load(model_path, map_location=device)
+        checkpoint = torch.load(model_path, map_location=device, weights_only=True)
         agent.actor.load_state_dict(checkpoint["actor_state_dict"])
 
         obs, _ = env.reset()
@@ -212,15 +214,18 @@ class EvaluateStrategies:
                 print(f"  [WARN] {strategy} failed: {exc}")
                 continue
 
+            # Normalise to decimals so benchmark and DRL metrics are on the same scale.
+            # DRL get_portfolio_metrics() returns decimals (e.g. 0.15 for 15%);
+            # BacktestBenchmark._compute_metrics returns *_pct keys (e.g. 15.0).
             metrics = {
                 "agent": strategy.upper(),
                 "seed": 0,
-                "annual_return": result["annual_return_pct"],
+                "annual_return": result["annual_return_pct"] / 100,
                 "sharpe_ratio": result["sharpe_ratio"],
                 "sortino_ratio": result["sortino_ratio"],
-                "max_drawdown": result["max_drawdown_pct"],
-                "cvar_5": result["cvar_5_pct"],
-                "volatility": result["volatility_pct"],
+                "max_drawdown": result["max_drawdown_pct"] / 100,
+                "cvar_5": result["cvar_5_pct"] / 100,
+                "volatility": result["volatility_pct"] / 100,
             }
             results.append(metrics)
 

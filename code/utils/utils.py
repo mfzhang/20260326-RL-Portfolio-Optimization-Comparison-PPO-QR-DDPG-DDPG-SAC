@@ -150,7 +150,8 @@ def calculate_rolling_sharpe(
     for i in range(window, len(returns) + 1):
         window_returns = returns[i - window : i]
         excess_returns = window_returns - daily_rf
-        sharpe = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252)
+        _std = np.std(excess_returns)
+        sharpe = np.mean(excess_returns) / _std * np.sqrt(252) if _std > 0 else 0.0
         rolling_sharpe.append(sharpe)
 
     # Pad with NaN for initial window

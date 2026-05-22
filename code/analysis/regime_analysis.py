@@ -19,7 +19,7 @@ import yaml
 
 warnings.filterwarnings("ignore")
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent  # → code/
 
 
 class MarketRegimeAnalyzer:

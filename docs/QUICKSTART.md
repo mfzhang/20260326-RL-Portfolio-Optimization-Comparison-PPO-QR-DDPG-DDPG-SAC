@@ -16,7 +16,7 @@ git clone <your-repo-url>
 cd enhanced-rl-portfolio
 
 # Copy environment template
-cp .env.example .env
+cp infrastructure/.env.example .env
 
 # Edit .env with your settings (optional)
 nano .env
@@ -55,7 +55,7 @@ Open your browser:
 docker-compose up training
 
 # Option B: Using local Python
-docker exec -it rl-portfolio-api python code/train.py
+docker exec -it rl-portfolio-api python code/training/train.py
 ```
 
 ### Step 5: Get Portfolio Recommendations

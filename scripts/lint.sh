@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 # lint.sh
 # -------
-# Run from the project root. Asks for a directory, then runs
-# ruff, flake8, mypy, and pylint against it.
+# Run from the project root: bash scripts/lint.sh
+# Lints the code/ directory (or a subdirectory you choose) with
+# ruff, flake8, mypy, and pylint.
 
-# ── enable ** glob for bash ───────────────────────────────────────────────────
-shopt -s globstar 2>/dev/null
+set -euo pipefail
+shopt -s globstar 2>/dev/null || true
 
-# ── prompt ────────────────────────────────────────────────────────────────────
+# ── Default target ────────────────────────────────────────────────────────
+DEFAULT_TARGET="code"
+
 echo ""
-echo "Available directories:"
-ls -d */ 2>/dev/null
+echo "Available directories under code/:"
+ls -d "${DEFAULT_TARGET}"/*/  2>/dev/null || true
 echo ""
-read -rp "Enter directory to lint (or '.' for entire project): " TARGET
+read -rp "Enter sub-directory to lint (or press Enter to lint all of '${DEFAULT_TARGET}'): " USER_TARGET
 
-# ── validate ──────────────────────────────────────────────────────────────────
+TARGET="${USER_TARGET:-$DEFAULT_TARGET}"
+
+# ── Validate ──────────────────────────────────────────────────────────────
 if [[ -z "$TARGET" ]]; then
     echo "Error: no directory entered."
     exit 1
@@ -25,7 +30,6 @@ if [[ ! -d "$TARGET" ]]; then
     exit 1
 fi
 
-# Check there are actually Python files to lint
 PY_FILES=$(find "$TARGET" -name "*.py" | head -1)
 if [[ -z "$PY_FILES" ]]; then
     echo "No Python files found in '$TARGET'."
@@ -35,11 +39,11 @@ fi
 PY_COUNT=$(find "$TARGET" -name "*.py" | wc -l | tr -d ' ')
 echo ""
 echo "══════════════════════════════════════════════════════════"
-echo "  Target  : $TARGET"
-echo "  Python files found: $PY_COUNT"
+echo "  Target       : $TARGET"
+echo "  Python files : $PY_COUNT"
 echo "══════════════════════════════════════════════════════════"
 
-# ── ruff ──────────────────────────────────────────────────────────────────────
+# ── ruff ──────────────────────────────────────────────────────────────────
 echo ""
 echo "[ 1/4 ] ruff ─────────────────────────────────────────────"
 if command -v ruff &>/dev/null; then
@@ -48,7 +52,7 @@ else
     echo "  ruff not installed — run: pip install ruff"
 fi
 
-# ── flake8 ────────────────────────────────────────────────────────────────────
+# ── flake8 ────────────────────────────────────────────────────────────────
 echo ""
 echo "[ 2/4 ] flake8 ───────────────────────────────────────────"
 if command -v flake8 &>/dev/null; then
@@ -57,7 +61,7 @@ else
     echo "  flake8 not installed — run: pip install flake8"
 fi
 
-# ── mypy ──────────────────────────────────────────────────────────────────────
+# ── mypy ──────────────────────────────────────────────────────────────────
 echo ""
 echo "[ 3/4 ] mypy ─────────────────────────────────────────────"
 if command -v mypy &>/dev/null; then
@@ -66,7 +70,7 @@ else
     echo "  mypy not installed — run: pip install mypy"
 fi
 
-# ── pylint ────────────────────────────────────────────────────────────────────
+# ── pylint ────────────────────────────────────────────────────────────────
 echo ""
 echo "[ 4/4 ] pylint ───────────────────────────────────────────"
 if command -v pylint &>/dev/null; then

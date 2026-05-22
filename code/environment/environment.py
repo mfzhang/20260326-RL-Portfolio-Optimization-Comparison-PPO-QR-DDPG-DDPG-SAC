@@ -282,8 +282,9 @@ class PortfolioEnv(gym.Env):
         self.portfolio_returns.append(portfolio_return)
         self.actions_memory.append(actions)
         self.current_step += 1
-        if self.current_step < self.n_dates:
-            self.date_memory.append(self.dates[self.current_step])
+        # Always append a date so date_memory and portfolio_values stay in sync.
+        # At the terminal step current_step == n_dates; clamp to last valid index.
+        self.date_memory.append(self.dates[min(self.current_step, self.n_dates - 1)])
 
         next_state = self._get_state()
         info = {
@@ -294,7 +295,7 @@ class PortfolioEnv(gym.Env):
         return next_state, reward, terminated, truncated, info
 
     def render(self) -> None:
-        if self.current_step % self.print_verbosity == 0:
+        if self.print_verbosity > 0 and self.current_step % self.print_verbosity == 0:
             print(
                 f"Step {self.current_step:>5} | "
                 f"Portfolio Value: ${self.portfolio_value:>14,.2f}"

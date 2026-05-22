@@ -1,5 +1,12 @@
 version: "3.8"
 
+# ── Build context is the project root (one level up from infrastructure/) ──
+# Run from project root: docker-compose up -d
+
+x-build-defaults: &build-defaults
+  context: .
+  dockerfile: Dockerfile
+
 services:
   # PostgreSQL database for storing results and monitoring
   postgres:
@@ -11,7 +18,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./production/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     networks:
@@ -33,11 +39,9 @@ services:
 
   # Training service with GPU support
   training:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: *build-defaults
     container_name: rl-portfolio-training
-    command: python code/train.py
+    command: python code/training/train.py
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - CUDA_VISIBLE_DEVICES=0
@@ -52,7 +56,7 @@ services:
       - ./data:/app/data
       - ./models:/app/models
       - ./results:/app/results
-      - ./config:/app/config
+      - ./code/config:/app/code/config
     networks:
       - rl-portfolio-network
     depends_on:
@@ -62,11 +66,9 @@ services:
 
   # API service for serving predictions
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: *build-defaults
     container_name: rl-portfolio-api
-    command: uvicorn production.api:app --host 0.0.0.0 --port 8000 --workers 4
+    command: uvicorn code.production.api:app --host 0.0.0.0 --port 8000 --workers 4
     ports:
       - "8000:8000"
     environment:
@@ -75,7 +77,7 @@ services:
       - MODEL_PATH=/app/models
     volumes:
       - ./models:/app/models:ro
-      - ./config:/app/config:ro
+      - ./code/config:/app/code/config:ro
       - ./results:/app/results
     networks:
       - rl-portfolio-network
@@ -86,11 +88,9 @@ services:
 
   # Celery worker for background tasks
   celery_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: *build-defaults
     container_name: rl-portfolio-celery
-    command: celery -A production.tasks worker --loglevel=info --concurrency=2
+    command: celery -A code.production.tasks worker --loglevel=info --concurrency=2
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-portfolio_user}:${POSTGRES_PASSWORD:-portfolio_pass}@postgres:5432/${POSTGRES_DB:-portfolio_db}
       - REDIS_URL=redis://redis:6379/0
@@ -108,16 +108,14 @@ services:
 
   # Celery beat scheduler for periodic tasks
   celery_beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: *build-defaults
     container_name: rl-portfolio-beat
-    command: celery -A production.tasks beat --loglevel=info
+    command: celery -A code.production.tasks beat --loglevel=info
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-portfolio_user}:${POSTGRES_PASSWORD:-portfolio_pass}@postgres:5432/${POSTGRES_DB:-portfolio_db}
       - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ./config:/app/config:ro
+      - ./code/config:/app/code/config:ro
     networks:
       - rl-portfolio-network
     depends_on:
@@ -141,7 +139,6 @@ services:
       - GF_DATABASE_PASSWORD=${POSTGRES_PASSWORD:-portfolio_pass}
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./production/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
       - rl-portfolio-network
     depends_on:
@@ -150,9 +147,7 @@ services:
 
   # Jupyter notebook for experimentation
   jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: *build-defaults
     container_name: rl-portfolio-jupyter
     command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
     ports:

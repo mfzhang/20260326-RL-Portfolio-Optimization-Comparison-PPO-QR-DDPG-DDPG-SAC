@@ -9,6 +9,7 @@ and client reporting.
 from __future__ import annotations
 
 import logging
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -32,7 +33,13 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
+# code/ directory — config lives at code/config/config.yaml
 _ROOT = Path(__file__).resolve().parent.parent
+
+# Ensure code/ is on sys.path so sibling modules (agents, etc.) are importable
+_CODE_DIR = str(_ROOT)
+if _CODE_DIR not in sys.path:
+    sys.path.insert(0, _CODE_DIR)
 
 with open(_ROOT / "config" / "config.yaml") as _f:
     config: Dict[str, Any] = yaml.safe_load(_f)
@@ -265,7 +272,9 @@ async def get_portfolio_recommendation(request: PortfolioRequest):
             n = len(all_tickers)
             dim = 1 + n + n * 6
             agent = QRDDPGAgent(state_dim=dim, action_dim=n)
-            ckpt = torch.load(model["checkpoint"], map_location="cpu")
+            ckpt = torch.load(
+                model["checkpoint"], map_location="cpu", weights_only=True
+            )
             agent.actor.load_state_dict(ckpt["actor_state_dict"])
             raw_weights = agent.select_action(state, noise=0.0)
         else:
@@ -276,7 +285,11 @@ async def get_portfolio_recommendation(request: PortfolioRequest):
         raise HTTPException(status_code=500, detail="Model inference failed") from exc
 
     weights = np.clip(raw_weights, 0, 1)
-    weights = weights / weights.sum() if weights.sum() > 0 else weights
+    _w_sum = weights.sum()
+    # If all weights clip to zero, fall back to equal-weight allocation
+    weights = (
+        weights / _w_sum if _w_sum > 0 else np.ones(len(all_tickers)) / len(all_tickers)
+    )
 
     weight_dict = {t: round(float(w), 6) for t, w in zip(all_tickers, weights)}
     risk_metrics: Dict = {}  # Populated once live data pipeline is wired up
@@ -378,7 +391,7 @@ if __name__ == "__main__":
 
     api_cfg = config["production"]["api"]
     uvicorn.run(
-        "api:app",
+        "code.production.api:app",
         host=api_cfg["host"],
         port=api_cfg["port"],
         reload=False,  # never use reload=True in production

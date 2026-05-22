@@ -1,4 +1,5 @@
 # Multi-stage Dockerfile for RL Portfolio Optimization
+# Build context: project root (docker build -f infrastructure/Dockerfile .)
 # Supports both CPU and GPU training
 
 ARG CUDA_VERSION=11.8.0
@@ -34,9 +35,9 @@ RUN python -m pip install --upgrade pip setuptools wheel
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-COPY requirements-prod.txt .
+# Copy requirements first for better layer caching
+COPY code/requirements.txt ./requirements.txt
+COPY code/requirements-prod.txt ./requirements-prod.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt && \
@@ -45,12 +46,10 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 # Install PyTorch with CUDA support
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# Copy application code
+# Copy application code (preserves import structure: code/ at /app/code/)
 COPY code/ ./code/
-COPY config/ ./config/
-COPY production/ ./production/
 
-# Create necessary directories
+# Create necessary runtime directories
 RUN mkdir -p data models results/figures results/logs results/reports
 
 # Expose port for FastAPI
@@ -60,5 +59,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command (can be overridden)
-CMD ["python", "-m", "uvicorn", "production.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default command — run from /app so `code.production.api` resolves correctly
+CMD ["python", "-m", "uvicorn", "code.production.api:app", "--host", "0.0.0.0", "--port", "8000"]

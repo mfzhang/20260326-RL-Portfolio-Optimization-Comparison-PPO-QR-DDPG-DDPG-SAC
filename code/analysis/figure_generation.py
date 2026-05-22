@@ -1,9 +1,15 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-# --- Configuration and Data Consistency ---
+# --- Configuration and Output Directory ---
+np.random.seed(42)  # reproducible figures
+FIGURES_DIR = Path("results/figures")
+FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+
 sns.set_theme(style="whitegrid")
 plt.rcParams.update(
     {
@@ -69,7 +75,9 @@ def generate_cumulative_returns_data(num_days=500):
     return df
 
 
-def plot_cumulative_returns(df, filename="Figure1_Cumulative_Returns.png"):
+def plot_cumulative_returns(
+    df, filename=str(FIGURES_DIR / "Figure1_Cumulative_Returns.png")
+):
     """Plots the cumulative returns time series."""
     plt.figure(figsize=(12, 7))
     palette = {
@@ -118,7 +126,9 @@ def generate_sensitivity_data():
     return df
 
 
-def plot_sensitivity_analysis(df, filename="Figure2_Sensitivity_Analysis.png"):
+def plot_sensitivity_analysis(
+    df, filename=str(FIGURES_DIR / "Figure2_Sensitivity_Analysis.png")
+):
     """Plots the sensitivity of performance metrics to the lambda parameter."""
     fig, ax1 = plt.subplots(figsize=(10, 6))
     color = "#1f77b4"
@@ -185,7 +195,9 @@ def generate_shap_data():
     return df
 
 
-def plot_shap_importance(df, filename="Figure3_SHAP_Feature_Importance.png"):
+def plot_shap_importance(
+    df, filename=str(FIGURES_DIR / "Figure3_SHAP_Feature_Importance.png")
+):
     """Plots the mean absolute SHAP values for feature importance."""
     plt.figure(figsize=(10, 7))
     sns.barplot(x="Mean Absolute SHAP Value", y="Feature", data=df, palette="viridis")
@@ -242,7 +254,9 @@ def generate_weights_trajectory_data(num_days=252):
     return df
 
 
-def plot_weights_trajectory(df, filename="Figure4_Dynamic_Portfolio_Weights.png"):
+def plot_weights_trajectory(
+    df, filename=str(FIGURES_DIR / "Figure4_Dynamic_Portfolio_Weights.png")
+):
     """Plots the dynamic portfolio weights trajectory as a stacked area chart."""
     plt.figure(figsize=(12, 7))
 
@@ -303,16 +317,19 @@ def generate_tukey_data():
     return df
 
 
-def plot_tukey_hsd(df, filename="Figure5_Tukey_HSD_Statistical_Significance.png"):
+def plot_tukey_hsd(
+    df, filename=str(FIGURES_DIR / "Figure5_Tukey_HSD_Statistical_Significance.png")
+):
     """Plots the mean daily returns with error bars and significance groups."""
     plt.figure(figsize=(10, 6))
 
     # Plot mean daily returns with error bars
     sns.barplot(x="Strategy", y="Mean Daily Return", data=df, palette="coolwarm")
+    # Use integer positions so error bars align with seaborn barplot bars
     plt.errorbar(
-        x=df["Strategy"],
-        y=df["Mean Daily Return"],
-        yerr=df["Std Error"],
+        x=range(len(df)),
+        y=df["Mean Daily Return"].values,
+        yerr=df["Std Error"].values,
         fmt="none",
         c="black",
         capsize=5,
@@ -369,7 +386,7 @@ def generate_ablation_data():
     return df
 
 
-def plot_ablation_study(df, filename="Figure6_Ablation_Study.png"):
+def plot_ablation_study(df, filename=str(FIGURES_DIR / "Figure6_Ablation_Study.png")):
     """Plots the Ablation Study results (Sharpe Ratio vs. Max Drawdown)."""
     plt.figure(figsize=(10, 6))
 
@@ -437,7 +454,7 @@ def generate_daily_returns_data(num_days=500):
 
 
 def plot_daily_returns_distribution(
-    df, filename="Figure7_Daily_Returns_Distribution.png"
+    df, filename=str(FIGURES_DIR / "Figure7_Daily_Returns_Distribution.png")
 ):
     """Plots the Kernel Density Estimate (KDE) of daily returns."""
     plt.figure(figsize=(10, 6))
@@ -467,30 +484,46 @@ def plot_daily_returns_distribution(
 if __name__ == "__main__":
     # Generate and plot Figure 1
     cumulative_df = generate_cumulative_returns_data()
-    plot_cumulative_returns(cumulative_df)
+    plot_cumulative_returns(
+        cumulative_df, filename=str(FIGURES_DIR / "Figure1_Cumulative_Returns.png")
+    )
 
     # Generate and plot Figure 2
     sensitivity_df = generate_sensitivity_data()
-    plot_sensitivity_analysis(sensitivity_df)
+    plot_sensitivity_analysis(
+        sensitivity_df, filename=str(FIGURES_DIR / "Figure2_Sensitivity_Analysis.png")
+    )
 
     # Generate and plot Figure 3
     shap_df = generate_shap_data()
-    plot_shap_importance(shap_df)
+    plot_shap_importance(
+        shap_df, filename=str(FIGURES_DIR / "Figure3_SHAP_Feature_Importance.png")
+    )
 
     # Generate and plot Figure 4
     weights_df = generate_weights_trajectory_data()
-    plot_weights_trajectory(weights_df)
+    plot_weights_trajectory(
+        weights_df, filename=str(FIGURES_DIR / "Figure4_Dynamic_Portfolio_Weights.png")
+    )
 
     # Generate and plot Figure 5
     tukey_df = generate_tukey_data()
-    plot_tukey_hsd(tukey_df)
+    plot_tukey_hsd(
+        tukey_df,
+        filename=str(FIGURES_DIR / "Figure5_Tukey_HSD_Statistical_Significance.png"),
+    )
 
     # Generate and plot Figure 6 (New)
     ablation_df = generate_ablation_data()
-    plot_ablation_study(ablation_df)
+    plot_ablation_study(
+        ablation_df, filename=str(FIGURES_DIR / "Figure6_Ablation_Study.png")
+    )
 
     # Generate and plot Figure 7 (New)
     daily_returns_df = generate_daily_returns_data()
-    plot_daily_returns_distribution(daily_returns_df)
+    plot_daily_returns_distribution(
+        daily_returns_df,
+        filename=str(FIGURES_DIR / "Figure7_Daily_Returns_Distribution.png"),
+    )
 
     print("All seven figures generated successfully.")

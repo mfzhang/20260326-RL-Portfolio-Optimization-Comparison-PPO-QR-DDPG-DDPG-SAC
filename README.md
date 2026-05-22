@@ -3,8 +3,8 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18666986.svg)](https://doi.org/10.5281/zenodo.18666986)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](requirements.txt)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](requirements.txt)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](Dockerfile)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Production-green.svg)](production/api.py)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](infrastructure/Dockerfile)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Production-green.svg)](code/production/api.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A comparative study of four Deep Reinforcement Learning algorithms PPO, QR-DDPG, DDPG, and SAC applied to continuous portfolio optimization across a 25-asset universe. Integrates transaction cost analysis, market regime classification, and real-world trading constraints in a production-ready deployment framework.
@@ -61,24 +61,28 @@ docker-compose up -d
 
 ```bash
 python3.10 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt -r requirements-prod.txt
+pip install -r code/requirements.txt -r code/requirements-prod.txt
 
-python code/data_processor.py
-python code/train.py
-python code/evaluate.py
+python code/data/data_processor.py
+python code/training/train.py
+python code/evaluation/evaluate.py
 ```
 
 ---
 
 ## Project Structure
 
-| Path          | Description   | Key Files                                                |
-| :------------ | :------------ | :------------------------------------------------------- |
-| `code/`       | Core Logic    | `agents.py`, `environment.py`, `train.py`, `evaluate.py` |
-| `config/`     | Configuration | `config.yaml`                                            |
-| `production/` | Deployment    | `api.py`, `monitoring.py`                                |
-| `notebooks/`  | Analysis      | `transaction_cost_analysis.ipynb`                        |
-| `tests/`      | Unit Tests    | `__init__.py`                                            |
+| Path                 | Description           | Key Files                                                |
+| :------------------- | :-------------------- | :------------------------------------------------------- |
+| `code/`              | Core ML logic         | `agents.py`, `environment.py`, `train.py`, `evaluate.py` |
+| `code/config/`       | Configuration         | `config.yaml`                                            |
+| `code/production/`   | Production API        | `api.py`                                                 |
+| `code/tests/`        | Unit tests            | `__init__.py`                                            |
+| `infrastructure/`    | Infra configs         | `.env.example`                                           |
+| `Dockerfile`         | Container build       | Multi-stage, CUDA-enabled image                          |
+| `docker-compose.yml` | Service orchestration | All services (API, DB, Redis, Jupyter, Grafana)          |
+| `scripts/`           | Dev & CI helpers      | `Makefile`, `lint.sh`                                    |
+| `docs/`              | Documentation         | `QUICKSTART.md`                                          |
 
 ---
 

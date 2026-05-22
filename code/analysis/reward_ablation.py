@@ -21,7 +21,7 @@ import yaml
 
 warnings.filterwarnings("ignore")
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent  # → code/
 
 
 class RewardAblationStudy:
@@ -76,7 +76,7 @@ class RewardAblationStudy:
 
                 env = env_factory(max_drawdown_penalty=lam)
                 agent = agent_class(env)
-                agent.train(total_timesteps=training_steps)
+                agent.learn(total_timesteps=training_steps)
 
                 metrics = self._evaluate_agent(agent, env)
                 metrics["lambda"] = lam

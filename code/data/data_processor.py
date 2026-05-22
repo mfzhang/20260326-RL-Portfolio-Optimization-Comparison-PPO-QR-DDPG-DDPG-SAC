@@ -20,7 +20,7 @@ import yfinance as yf
 
 warnings.filterwarnings("ignore")
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent  # → code/
 
 
 class DataProcessor:
@@ -72,7 +72,6 @@ class DataProcessor:
             group_by="ticker",
             auto_adjust=True,
             progress=False,
-            threads=True,
         )
 
         data_list: List[pd.DataFrame] = []
@@ -93,6 +92,12 @@ class DataProcessor:
                     continue
 
                 df_t = df_t.reset_index()
+                # yfinance ≥0.2.x may name the date index 'Datetime'
+                if "Datetime" in df_t.columns and "Date" not in df_t.columns:
+                    df_t = df_t.rename(columns={"Datetime": "Date"})
+                # Strip timezone so date comparisons with naive config strings work
+                if pd.api.types.is_datetime64tz_dtype(df_t["Date"]):
+                    df_t["Date"] = df_t["Date"].dt.tz_localize(None)
                 df_t["tic"] = ticker
                 data_list.append(
                     df_t[["Date", "Open", "High", "Low", "Close", "Volume", "tic"]]
@@ -116,7 +121,6 @@ class DataProcessor:
                 group_by="ticker",
                 auto_adjust=True,
                 progress=False,
-                threads=True,
             )
             for ticker in macro_factors:
                 try:
@@ -124,6 +128,10 @@ class DataProcessor:
                         macro_raw[ticker] if len(macro_factors) > 1 else macro_raw
                     ).copy()
                     df_t = df_t.dropna(subset=["Close"]).reset_index()
+                    if "Datetime" in df_t.columns and "Date" not in df_t.columns:
+                        df_t = df_t.rename(columns={"Datetime": "Date"})
+                    if pd.api.types.is_datetime64tz_dtype(df_t["Date"]):
+                        df_t["Date"] = df_t["Date"].dt.tz_localize(None)
                     df_t["tic"] = ticker
                     data_list.append(
                         df_t[["Date", "Open", "High", "Low", "Close", "Volume", "tic"]]
@@ -206,13 +214,13 @@ class DataProcessor:
 
             processed_list.append(t)
 
+        # Fill NaNs per-ticker *before* concatenating so we never propagate
+        # one asset's values into another asset's missing rows.
+        filled_list = [t.sort_values("Date").ffill().bfill() for t in processed_list]
         self.processed_data = (
-            pd.concat(processed_list, ignore_index=True)
+            pd.concat(filled_list, ignore_index=True)
             .sort_values(["Date", "tic"])
             .reset_index(drop=True)
-            # Fix: .ffill().bfill() replaces deprecated fillna(method=)
-            .ffill()
-            .bfill()
         )
 
         print("Technical indicators calculated successfully")
